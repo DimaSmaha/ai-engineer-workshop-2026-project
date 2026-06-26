@@ -37,6 +37,10 @@ export const users = sqliteTable("users", {
   role: text("role").notNull().$type<UserRole>(),
   avatarUrl: text("avatar_url"),
   bio: text("bio"),
+  points: integer("points").notNull().default(0),
+  streakDays: integer("streak_days").notNull().default(0),
+  longestStreak: integer("longest_streak").notNull().default(0),
+  lastQuizDate: text("last_quiz_date"),
   createdAt: text("created_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
@@ -250,6 +254,21 @@ export const videoWatchEvents = sqliteTable("video_watch_events", {
   eventType: text("event_type").notNull(),
   positionSeconds: real("position_seconds").notNull(),
   createdAt: text("created_at")
+    .notNull()
+    .$defaultFn(() => new Date().toISOString()),
+});
+
+export const userPointEvents = sqliteTable("user_point_events", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: integer("user_id")
+    .notNull()
+    .references(() => users.id),
+  points: integer("points").notNull(),
+  reason: text("reason").notNull().$type<"attempt" | "pass">(),
+  quizAttemptId: integer("quiz_attempt_id")
+    .notNull()
+    .references(() => quizAttempts.id),
+  awardedAt: text("awarded_at")
     .notNull()
     .$defaultFn(() => new Date().toISOString()),
 });

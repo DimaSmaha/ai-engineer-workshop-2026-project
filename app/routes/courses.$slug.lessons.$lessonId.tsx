@@ -26,6 +26,7 @@ import {
   getBestAttempt,
 } from "~/services/quizService";
 import { computeResult } from "~/services/quizScoringService";
+import { recordQuizActivity } from "~/services/gamificationService";
 import { LessonProgressStatus } from "~/db/schema";
 import { Button } from "~/components/ui/button";
 import { Card, CardContent } from "~/components/ui/card";
@@ -327,6 +328,8 @@ export async function action({ params, request }: Route.ActionArgs) {
     if (!result) {
       throw data("Failed to score quiz", { status: 500 });
     }
+
+    recordQuizActivity(currentUserId, result.attemptId, result.passed);
 
     return { quizResult: result };
   }

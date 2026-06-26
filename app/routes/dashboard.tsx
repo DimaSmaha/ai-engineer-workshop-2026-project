@@ -2,11 +2,12 @@ import { Link } from "react-router";
 import type { Route } from "./+types/dashboard";
 import { getUserEnrolledCourses } from "~/services/enrollmentService";
 import { calculateProgress, getCompletedLessonCount, getTotalLessonCount, getNextIncompleteLesson } from "~/services/progressService";
+import { getGamificationSummary } from "~/services/gamificationService";
 import { getCurrentUserId } from "~/lib/session";
 import { Card, CardContent, CardFooter, CardHeader } from "~/components/ui/card";
 import { Button } from "~/components/ui/button";
 import { Skeleton } from "~/components/ui/skeleton";
-import { AlertTriangle, BookOpen, CheckCircle2, GraduationCap, PlayCircle } from "lucide-react";
+import { AlertTriangle, BookOpen, CheckCircle2, GraduationCap, PlayCircle, Trophy } from "lucide-react";
 import { CourseImage } from "~/components/course-image";
 import { data, isRouteErrorResponse } from "react-router";
 
@@ -59,7 +60,9 @@ export async function loader({ request }: Route.LoaderArgs) {
   const completedCourses = coursesWithProgress.filter((c) => c.isCompleted);
   const inProgressCourses = coursesWithProgress.filter((c) => !c.isCompleted);
 
-  return { inProgressCourses, completedCourses };
+  const gamification = getGamificationSummary(currentUserId);
+
+  return { inProgressCourses, completedCourses, gamification };
 }
 
 function DashboardCardSkeleton() {
@@ -102,7 +105,7 @@ export function HydrateFallback() {
 }
 
 export default function Dashboard({ loaderData }: Route.ComponentProps) {
-  const { inProgressCourses, completedCourses } = loaderData;
+  const { inProgressCourses, completedCourses, gamification } = loaderData;
   const totalCourses = inProgressCourses.length + completedCourses.length;
 
   return (
@@ -122,6 +125,8 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
           Track your learning progress
         </p>
       </div>
+
+      <GamificationWidget gamification={gamification} />
 
       {totalCourses === 0 ? (
         <div className="flex flex-col items-center justify-center py-16 text-center">
@@ -260,6 +265,48 @@ export default function Dashboard({ loaderData }: Route.ComponentProps) {
         </div>
       )}
     </div>
+  );
+}
+
+function GamificationWidget({
+  gamification,
+}: {
+  gamification: {
+    points: number;
+    tier: string;
+    tierProgressPercent: number;
+    streakDays: number;
+    longestStreak: number;
+  };
+}) {
+  return (
+    <Card className="mb-8">
+      <CardContent className="p-4">
+        <div className="flex items-center gap-3 mb-3">
+          <Trophy className="size-5 text-amber-500" />
+          <span className="font-bold text-lg">{gamification.tier}</span>
+          <span className="text-muted-foreground text-sm">·</span>
+          <span className="text-sm text-muted-foreground">{gamification.points} pts</span>
+          {gamification.streakDays > 0 && (
+            <>
+              <span className="text-muted-foreground text-sm">·</span>
+              <span className="text-sm text-muted-foreground">🔥 {gamification.streakDays}-day streak</span>
+            </>
+          )}
+        </div>
+        <div className="flex items-center gap-2">
+          <div className="flex-1 h-2 overflow-hidden rounded-full bg-muted">
+            <div
+              className="h-full rounded-full bg-amber-500 transition-all"
+              style={{ width: `${gamification.tierProgressPercent}%` }}
+            />
+          </div>
+          <span className="text-xs text-muted-foreground w-8 text-right">
+            {gamification.tierProgressPercent}%
+          </span>
+        </div>
+      </CardContent>
+    </Card>
   );
 }
 
